@@ -1,7 +1,11 @@
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.security.spec.KeySpec;
 import java.util.ArrayList;
 
 public class ClientHandler extends Thread {
@@ -16,8 +20,10 @@ public class ClientHandler extends Thread {
 
     ArrayList<String> receivedMessages = new ArrayList<>();
 
+
     ClientHandler(Socket clientSocket)
     {
+
         client = clientSocket ;
 
         try {
@@ -79,7 +85,7 @@ public class ClientHandler extends Thread {
     }
 
 
-    public void sendMessage(String message)
+    public void sendMessage(String message )
     {
         try {
 
@@ -96,4 +102,7 @@ public class ClientHandler extends Thread {
     {
         return receivedMessages;
     }
+   /* public SecretKey getSecretKey() throws Exception {
+      return new Client().GETKEY();
+    }*/
 }

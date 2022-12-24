@@ -1,19 +1,29 @@
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
+import java.util.Base64;
 
 public class Server {
-
-    Server()
-    {
+    static Cipher cipher;
+    static String KEY = "aesEncryptionKey";
+    static String initVector = "encryptionIntVec";
+    Server() throws Exception {
         try {
             //Data type تقوم بعمل Socket من نوع استماع
             //حيث تستسمع للاتصالات وتجهز بيانات المتصل وتعيد socket فيهاالبيانات
-
+            cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
             ServerSocket serverSocket = new ServerSocket(22000) ;
             Socket clientSocket = serverSocket.accept(); //مازال ينتظر تواصل أحد الكلاينت مع هذا البورت
 
@@ -24,6 +34,7 @@ public class Server {
 
 
              clientSocket = serverSocket.accept();
+
             System.out.println("the second client is ready ");
             ClientHandler clientHandler2 = new ClientHandler(clientSocket) ;
             clientHandler2.start();
@@ -32,6 +43,7 @@ public class Server {
             while (true) {
                 //Received the messages from the first client(clientHandler)
                 messages = clientHandler.getReceivedMessages() ;
+                //KEY1 = clientHandler.getSecretKey();
 
                 if (!messages.isEmpty())
                 {
@@ -40,7 +52,7 @@ public class Server {
                         for (int i = 0 ; i < messages.size() ; i++)
                         {
                             //send the messages to the other client
-                            clientHandler2.sendMessage(messages.get(i));
+                            clientHandler2.sendMessage(decrypt(messages.get(i)));
                         }
                         messages.clear();
                     }
@@ -49,6 +61,7 @@ public class Server {
 
                 //Received the messages from the first client(clientHandler2)
                 messages = clientHandler2.getReceivedMessages() ;
+                //KEY2 = clientHandler2.getSecretKey();
                 if (!messages.isEmpty())
                 {
                     synchronized (messages)
@@ -56,7 +69,7 @@ public class Server {
                         for (int i = 0 ; i < messages.size() ; i++)
                         {
                             //send the messages to the other client
-                            clientHandler.sendMessage(messages.get(i));
+                            clientHandler.sendMessage(decrypt(messages.get(i)));
                         }
                         messages.clear();
                     }
@@ -97,10 +110,22 @@ public class Server {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-
-            }//End of while loop
+                //System.out.println("KEY1 = " + KEY1 + " KEY2 = " + KEY2);
+            }
+            //End of while loop
         } catch (IOException e) {
             e.printStackTrace();
         }
+        }
+    public static String decrypt(String encryptedText)
+            throws Exception {
+        SecretKeySpec secretKeySpec = new SecretKeySpec(KEY.getBytes(),"AES");
+        Base64.Decoder decoder = Base64.getDecoder();
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(initVector.getBytes());
+        byte[] encryptedTextByte = decoder.decode(encryptedText);
+        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec , ivParameterSpec);
+        byte[] decryptedByte = cipher.doFinal(encryptedTextByte);
+        String decryptedText = new String(decryptedByte);
+        return decryptedText;
     }
 }
